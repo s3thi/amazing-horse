@@ -1,5 +1,10 @@
 #!/usr/bin/env python2
 # vim: set sts=4 sw=4 et tw=0:
+#
+# Author(s): Ankur Sethi
+#            Nirbheek Chauhan
+# License: MIT (2011)
+#
 
 from gi.repository import Gio, GLib
 
