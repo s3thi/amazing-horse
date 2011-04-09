@@ -14,7 +14,8 @@ from external import irclib
 from players.base import Player
 
 PLAYERS = {'rhythmbox': 'players.rb',
-	   'iTunes': 'players.iT',}
+	   'iTunes': 'players.iT',
+           'exaile': 'players.ex'}
 FLOOD_CONTROL_TIME = 2
 
 class MusicBot(irclib.SimpleIRCClient):
