@@ -1,28 +1,54 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+# vim: set sts=4 sw=4 et tw=0:
+#
+# Author(s): Ankur
 
-import irclib
-import subprocess
+import random
 from datetime import datetime
 
-FLOOD_CONTROL_TIME = 10
+from external import irclib
 
+from players.base import Player
+
+PLAYERS = {'rhythmbox': 'players.rb',
+	   'iTunes': 'players.iT',}
+FLOOD_CONTROL_TIME = 2
 
 class MusicBot(irclib.SimpleIRCClient):
     def __init__(self):
         irclib.SimpleIRCClient.__init__(self)
-
         self.last_change = datetime.now()
-        
+	self._find_running_player()
         self.handlers = {
-            '!play': self.play,
-            '!pause': self.pause,
-            '!next': self.next,
-            '!prev': self.prev,
-            '!up': self.up,
-            '!down': self.down,
-            '!max': self.max
+            '!play': self.player.play,
+            '!pause': self.player.pause,
+            '!playpause': self.player.play_pause,
+            '!next': self.player.next,
+            '!prev': self.player.previous,
+            '!up': self.player.volume_up,
+            '!down': self.player.volume_down,
         }
-        
+
+    def _import(self, name):
+	# http://docs.python.org/library/functions.html#__import__
+	mod = __import__(name)
+	for each in name.split('.')[1:]:
+	    mod = getattr(mod, each)
+	return mod
+
+    def _find_running_player(self):
+	"""
+	Find the currently running player
+
+	uses the is_running() function for each module
+	"""
+	for (player_name, player_module) in PLAYERS.items():
+	    self.player_name = player_name
+	    self.player_module = self._import(player_module)
+	    self.player = self.player_module.Player()
+	    if self.player.is_running():
+		return
+
     def start(self):
         self.connection.join('#communityhack')
         irclib.SimpleIRCClient.start(self)
@@ -30,53 +56,24 @@ class MusicBot(irclib.SimpleIRCClient):
     def say(self, msg):
         self.connection.privmsg('#communityhack', msg)
 
-    def osascript(self, script):
-        subprocess.check_call(r'osascript -e "{0}"'.format(script), shell=True)
-
     def on_pubmsg(self, conn, event):
         text = event.arguments()[0]
+        now = datetime.now()
+        if (now - self.last_change).seconds > FLOOD_CONTROL_TIME:
+            self.last_change = now
+	else:
+	    print "Ignored command, flood control!"
+	    print "Command: %s" % text
+	    return
         if text in self.handlers:
-            self.handlers[text](text)
-
-    def play(self, text):
-        self.osascript(r'tell application \"iTunes\" to play')
-
-    def pause(self, text):
-        self.osascript(r'tell application \"iTunes\" to pause')
-
-    def next(self, text):
-        now = datetime.now()
-        if (now - self.last_change).seconds > FLOOD_CONTROL_TIME:
-            self.osascript(r'tell application \"iTunes\" to next track')
-            self.last_change = now
-
-    def prev(self, text):
-        now = datetime.now()
-        if (now - self.last_change).seconds > FLOOD_CONTROL_TIME:
-            self.osascript(r'tell application \"iTunes\" to previous track')
-            self.last_change = now
-
-    def up(self, text):
-        self.osascript(r'tell application \"iTunes\"' + 
-                        '\n set sound volume to (sound volume + 10)' +
-                        '\n end tell')
-
-    def down(self, text):
-        self.osascript(r'tell application \"iTunes\"' +
-                        '\n set sound volume to (sound volume - 10)' +
-                        '\n end tell')
-
-    def max(self, text):
-        self.osascript(r'tell application \"iTunes\"' +
-                        '\n set sound volume to 100' +
-                        '\n end tell')
-
+            self.handlers[text]()
 
 def main():
     irc = MusicBot()
-    irc.connect('irc.freenode.net', 6667, 'AmazingHorse')
+    # FIXME: HACK HACK HACK.
+    # Add ident + nick fallback
+    irc.connect('irc.freenode.net', 6667, 'AmazingHorse'+str(random.randint(0, 100)))
     irc.start()
-
 
 if __name__ == '__main__':
     main()
