@@ -18,11 +18,19 @@ class Player(players.base.Player):
         subprocess.check_call(r'osascript -e "{0}"'.format(script), shell=True)
  
     def is_running(self):
-        #raise NotImplementedError("Kill GM")
-        return False
+        ''' returning true here means iTunes is _runnable_, not _running_. '''
+        try:
+            return subprocess.call('osascript --lol', shell=True, stderr=subprocess.PIPE) == 2
+        except OSError:
+            return False
 
     def is_playing(self):
-        raise NotImplementedError("Kill GM")
+        cmd = r'tell application \"iTunes\"' +\
+               '\n get player state' +\
+               '\n end tell'
+        out = subprocess.Popen('osascript -e "{0}"'.format(cmd),
+                               stdout=subprocess.PIPE).communicate()[0]
+        return out.strip() == 'playing'
 
     def volume_up(self):
         self._osa_script(r'tell application \"iTunes\"' + 
@@ -41,7 +49,10 @@ class Player(players.base.Player):
         self._osa_script(r'tell application \"iTunes\" to previous track')
 
     def play_pause(self):
-        raise NotImplementedError("Kill GM")
+        if self.is_playing():
+            self.pause()
+        else:
+            self.play()
 
     def play(self):
         self._osa_script(r'tell application \"iTunes\" to play')

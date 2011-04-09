@@ -47,10 +47,16 @@ class MusicBot(irclib.SimpleIRCClient):
 	"""
 	for (player_name, player_module) in PLAYERS.items():
 	    self.player_name = player_name
-	    self.player_module = self._import(player_module)
+            try:
+	        self.player_module = self._import(player_module)
+            except ImportError:
+                print "Ignoring " + player_name
+                continue
 	    self.player = self.player_module.Player()
 	    if self.player.is_running():
 		return
+        else:
+            raise Exception("OMG NO RUNNING PLAYERS FOUND.")
 
     def start(self):
         self.connection.join('#communityhack')
