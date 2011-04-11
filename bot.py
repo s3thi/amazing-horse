@@ -16,7 +16,9 @@ from players.base import Player
 PLAYERS = {'rhythmbox': 'players.rb',
 	   'iTunes': 'players.iT',
            'exaile': 'players.ex'}
-FLOOD_CONTROL_TIME = 2
+FLOOD_CONTROL_TIME = 1
+NETWORK = "irc.oftc.net"
+CHANNEL = "#hackers-india"
 
 class MusicBot(irclib.SimpleIRCClient):
     def __init__(self):
@@ -59,30 +61,34 @@ class MusicBot(irclib.SimpleIRCClient):
         else:
             raise Exception("OMG NO RUNNING PLAYERS FOUND.")
 
-    def start(self):
-        self.connection.join('#communityhack')
-        irclib.SimpleIRCClient.start(self)
-
-    def say(self, msg):
-        self.connection.privmsg('#communityhack', msg)
-
-    def on_pubmsg(self, conn, event):
-        text = event.arguments()[0]
+    def _flood_control(self):
         now = datetime.now()
         if (now - self.last_change).seconds > FLOOD_CONTROL_TIME:
             self.last_change = now
-	else:
-	    print "Ignored command, flood control!"
-	    print "Command: %s" % text
-	    return
+            return False
+	return True
+
+    def start(self):
+        self.connection.join(CHANNEL)
+        irclib.SimpleIRCClient.start(self)
+
+    def say(self, msg):
+        self.connection.privmsg(CHANNEL, msg)
+
+    def on_pubmsg(self, conn, event):
+        text = event.arguments()[0]
         if text in self.handlers:
-            self.handlers[text]()
+            if not self._flood_control():
+                self.handlers[text]()
+            else:
+                print "Ignored command, flood control!"
+                print "Command: %s" % text
 
 def main():
     irc = MusicBot()
     # FIXME: HACK HACK HACK.
     # Add ident + nick fallback
-    irc.connect('irc.freenode.net', 6667, 'AmazingHorse'+str(random.randint(0, 100)))
+    irc.connect(NETWORK, 6667, 'AmazingHorse'+str(random.randint(0, 100)))
     irc.start()
 
 if __name__ == '__main__':
