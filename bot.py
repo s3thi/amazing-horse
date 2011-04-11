@@ -19,13 +19,28 @@ PLAYERS = {'rhythmbox': 'players.rb',
 FLOOD_CONTROL_TIME = 1
 NETWORK = "irc.oftc.net"
 CHANNEL = "#hackers-india"
+# http://lookatmyhorsemyhorseisamazing.com/
+LYRICS = ["Look at my horse, my horse is amazing",
+          "Give it a lick, Mmm it tastes just like raisins",
+          "Stroke on it's mane it turns into a plane",
+          "And then it turns back again when you tug on it's winky",
+          "Eww that's dirty!",
+          "Do you think so? Well I better not show you where the lemonade is made",
+          "Sweet Lemonade, Mmm Sweet lemonade",
+          "Sweet lemonade, yeah sweet lemonade",
+          "(Synth Solo)",
+          "Get on my horse, I'll take you round the Universe and all the other places too",
+          "I think you'll find that the Universe pretty much covers everything",
+          "Shut up woman, get on my horse"]
 
 class MusicBot(irclib.SimpleIRCClient):
     def __init__(self):
         irclib.SimpleIRCClient.__init__(self)
         self.last_change = datetime.now()
-	self._find_running_player()
+        self._find_running_player()
+        self._lyrics_pos = 0
         self.handlers = {
+            '!say': self.lyric_say,
             '!play': self.player.play,
             '!pause': self.player.pause,
             '!playpause': self.player.play_pause,
@@ -74,6 +89,12 @@ class MusicBot(irclib.SimpleIRCClient):
 
     def say(self, msg):
         self.connection.privmsg(CHANNEL, msg)
+
+    def lyric_say(self):
+        self.say(LYRICS[self._lyrics_pos])
+        self._lyrics_pos += 1
+        if self._lyrics_pos > len(LYRICS) - 1:
+            self._lyrics_pos = 0
 
     def on_pubmsg(self, conn, event):
         text = event.arguments()[0]
