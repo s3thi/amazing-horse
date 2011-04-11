@@ -18,6 +18,14 @@ class Player(object):
         """Is the player playing"""
         raise NotImplementedError("This method must be set by a subclass")
 
+    def status(self):
+        """Returns the current song"""
+        return "Printing of the song status is not implemented! Bug the authors!"
+
+    def get_volume(self):
+        """Get the current volume"""
+        return "Printing of the current volume is not implemented! Bug the authors!"
+
     def volume_up(self):
         """Increase volume by 10%"""
         raise NotImplementedError("This method must be set by a subclass")
@@ -53,3 +61,4 @@ class Player(object):
     def pause(self):
         """Pause current song"""
         raise NotImplementedError("This method must be set by a subclass")
+
