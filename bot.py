@@ -17,7 +17,8 @@ PLAYERS = {'rhythmbox': 'players.rb',
            'iTunes': 'players.iT',
            'exaile': 'players.ex',}
 FLOOD_CONTROL_TIME = 1
-NETWORK = "irc.oftc.net"
+SERVER = "irc.oftc.net"
+PORT = 6667
 CHANNEL = "#hackers-india"
 CMDSTR = ['!', '@']
 # http://lookatmyhorsemyhorseisamazing.com/
@@ -93,7 +94,6 @@ class MusicBot(irclib.SimpleIRCClient):
 	return True
 
     def start(self):
-        self.connection.join(CHANNEL)
         irclib.SimpleIRCClient.start(self)
 
     def say(self, msg):
@@ -135,7 +135,11 @@ def main():
     irc = MusicBot()
     # FIXME: HACK HACK HACK.
     # Add ident + nick fallback
-    irc.connect(NETWORK, 6667, 'AmazingHorse'+str(random.randint(0, 100)))
+    nick = 'AmazingHorse'+str(random.randint(0, 100))
+    print "Connecting to server %s:%s as %s" % (SERVER, PORT, nick)
+    irc.connect(SERVER, PORT, nick)
+    print "Joining channel %s" % CHANNEL
+    irc.connection.join(CHANNEL)
     irc.start()
 
 if __name__ == '__main__':
