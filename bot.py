@@ -14,8 +14,8 @@ from external import irclib
 from players.base import Player
 
 PLAYERS = {'rhythmbox': 'players.rb',
-	   'iTunes': 'players.iT',
-           'exaile': 'players.ex'}
+           'iTunes': 'players.iT',
+           'exaile': 'players.ex',}
 FLOOD_CONTROL_TIME = 1
 NETWORK = "irc.oftc.net"
 CHANNEL = "#hackers-india"
