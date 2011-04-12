@@ -59,6 +59,3 @@ class Player(players.base.Player):
 
     def pause(self):
         self._osa_script(r'tell application \"iTunes\" to pause')
-
-if __name__ == "__main__":
-    player = RBPlayer()

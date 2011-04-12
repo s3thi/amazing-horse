@@ -45,6 +45,3 @@ class Player(players.base.Player):
 
     def previous(self):
         self._exa_script(r'prev')
-
-if __name__ == "__main__":
-    player = RBPlayer()

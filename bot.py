@@ -81,6 +81,7 @@ class MusicBot(irclib.SimpleIRCClient):
 	    self.player = self.player_module.Player()
 	    if self.player.is_running():
 		return
+            print self.player_name + " not running"
         else:
             raise Exception("OMG NO RUNNING PLAYERS FOUND.")
 

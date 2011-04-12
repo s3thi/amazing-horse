@@ -85,6 +85,3 @@ class Player(players.base.Player):
     def pause(self):
         if self.is_playing():
             self.play_pause()
-
-if __name__ == "__main__":
-    player = RBPlayer()
