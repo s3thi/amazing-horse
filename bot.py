@@ -15,7 +15,8 @@ from players.base import Player
 
 PLAYERS = {'rhythmbox': 'players.rb',
            'iTunes': 'players.iT',
-           'exaile': 'players.ex',}
+           'exaile': 'players.ex',
+           'amarok': 'players.amarok'}
 FLOOD_CONTROL_TIME = 1
 SERVER = "irc.oftc.net"
 PORT = 6667
