@@ -25,7 +25,7 @@ class Player(players.base.Player):
                                               self.BUS_NAME, obj_name,
                                               iface_name, None)
     def _call_player_proxy(self, method, data):
-      time.sleep(0.1)
+      time.sleep(0.35)
       return self.player_proxy.call_sync(self.PLAYER_IFACE_NAME+'.'+method, data,
                                            Gio.DBusCallFlags.NONE, -1, None)
 
