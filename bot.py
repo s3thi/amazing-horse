@@ -21,6 +21,26 @@ SERVER = "irc.oftc.net"
 PORT = 6667
 CHANNEL = "#hackers-india"
 CMDSTR = ['!', '@']
+INSULTS = ["a cunt", "a piece of piss", "gayer than NPH", "scared of wee-wees",
+           "a poop-monster", "in love with pratual kalia's cock",
+           "under observation for pedophilic behaviour", "thinking about you",
+           "looking at my horse my horse is amazing", "a nub", "a boob",
+           "a creature who puts baboons to shame",
+           "a nihilistic, masochistic, gay ayn-rand lover", "allergic to cats",
+           "under the impression that he fits in", "in desperate need of some skull-fucking",
+           "a terrible, terrible driver", "a fan of justin bieber",
+           "a secret member of the chipmunk-andolan movement",
+           "currently engaged in dirty acts such as eating Glucon-D",
+           "currently occupied, please try again later", "not a funny person at all",
+           "thirsty, give him some of your man-juice", "not a big fan of boobs at all",
+           "just asking for it", "not going to be happy with this",
+           "jealous of pratual kalia's success as a ladies man", "an impudent bastard",
+           "afraid of cockroaches", "actually a hermaphrodite",
+           "shocked at your blatant disregard for his feelings",
+           "crying over the loss of his left ball", "drooling all over his keyboard",
+           "saving his virginity for pratual kalia", "self-sufficient in masturbation",
+           "not looking for a life at the moment, thank you very much",
+           "A BEAUTIFUL BUTTERFLY~~", "a Haiku OS developer, lol"]
 # http://lookatmyhorsemyhorseisamazing.com/
 LYRICS = ["Look at my horse, my horse is amazing",
           "Give it a lick, Mmm it tastes just like raisins",
@@ -38,6 +58,7 @@ LYRICS = ["Look at my horse, my horse is amazing",
 class MusicBot(irclib.SimpleIRCClient):
     def __init__(self):
         irclib.SimpleIRCClient.__init__(self)
+        self._hacky_insults_state = range(len(INSULTS))
         self.last_change = datetime.now()
         self._find_running_player()
         self._lyrics_pos = 0
@@ -51,13 +72,26 @@ class MusicBot(irclib.SimpleIRCClient):
             'up': (self.player.volume_up, self.player.get_volume),
             'down': (self.player.volume_down, self.player.get_volume),
             'status': (self._noop, self.player.status),
-            'say': (self._noop, self.lyric_say),
-            'randsay': (self._noop, self.lyric_randsay),
+            'say': (self._noop, self._lyric_say),
+            'randsay': (self._noop, self._lyric_randsay),
+            'insult': (self._insult, self._noop),
         }
 
     def _noop(self):
         """Do nothing!"""
         pass
+
+    def _biased_choice(self, objects):
+        """Return a random object with bias towards not repeating"""
+        import random
+        if not self._hacky_insults_state:
+            self._hacky_insults_state = range(len(objects))
+        i = random.choice(self._hacky_insults_state)
+        if random.choice((True, False)) and random.choice((True, False)):
+            pass
+        else:
+            self._hacky_insults_state.remove(i)
+        return objects[i]
 
     def _import(self, name):
 	# http://docs.python.org/library/functions.html#__import__
@@ -99,24 +133,29 @@ class MusicBot(irclib.SimpleIRCClient):
     def say(self, msg):
         self.connection.privmsg(CHANNEL, msg)
 
-    def lyric_say(self):
+    def _insult(self):
+        self.say("GeneralMaximus is %s" % self._biased_choice(INSULTS))
+
+    def _lyric_say(self):
         ret = LYRICS[self._lyrics_pos]
         self._lyrics_pos += 1
         if self._lyrics_pos > len(LYRICS) - 1:
             self._lyrics_pos = 0
         return ret
 
-    def lyric_randsay(self):
-        import random
-        return random.choice(LYRICS)
+    def _lyric_randsay(self):
+        return self._biased_choice(LYRICS)
 
     def _call_cmd(self, cmd):
         """Run the requested command using the appropriate handler"""
         self.handlers[cmd][0]()
-        self.say(self.handlers[cmd][1]())
+        output = self.handlers[cmd][1]()
+        if output:
+            self.say(output)
 
     def on_pubmsg(self, conn, event):
-        text = event.arguments()[0]
+        self.event = event
+        text = self.event.arguments()[0]
         for each in CMDSTR:
             if text.startswith(each):
                 text = text.lstrip(each)
