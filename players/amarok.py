@@ -56,15 +56,15 @@ class Player(players.base.Player):
             
     def get_volume(self):
         """Get the current volume"""
-        return str(round(self._call_player_proxy('VolumeGet', None)))
+        return str(round(self._call_player_proxy('VolumeGet', None).unpack()[0]))
         
     def volume_up(self):
         """Decrease volume by 10%"""
-        return self._call_player_proxy('VolumeUp', 10)
+        return self._call_player_proxy('VolumeUp', GLib.Variant("(i)", (10,)))
         
     def volume_down(self):
         """Decrease volume by 10%"""
-        return self._call_player_proxy('VolumeDown', 10)
+        return self._call_player_proxy('VolumeDown', GLib.Variant("(i)", (10,)))
         
     def volume_mute(self):
         """Mute volume"""
@@ -72,7 +72,7 @@ class Player(players.base.Player):
         
     def volume_max(self):
         """Set volume to maximum"""
-        return self._call_player_proxy('VolumeSet', 100)
+        return self._call_player_proxy('VolumeSet', GLib.Variant("(i)", (100,)))
         
     def next(self):
         """Next song in playlist"""
