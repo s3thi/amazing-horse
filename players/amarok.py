@@ -2,80 +2,89 @@
 # vim: set sts=4 sw=4 et tw=0:
 #
 # Author(s): Rohan Garg <rohan16garg@gmail.com>
-# License: GPL (2011)
+# License: MIT (2011)
 #
 
 import players.base
-import dbus
 import time
+from gi.repository import Gio, GLib
+
 
 class Player(players.base.Player):
     def __init__(self):
-        self.sessionBus = dbus.SessionBus()
-        self.player = self.sessionBus.get_object("org.mpris.amarok",
-						 "/Player")
- 
+        self.BUS_NAME = "org.mpris.amarok"
+        self.PLAYER_OBJ_NAME = "/Player"
+        self.PLAYER_IFACE_NAME = "org.freedesktop.MediaPlayer"
+        self.player_proxy = self._get_proxy(obj_name=self.PLAYER_OBJ_NAME,
+                                            iface_name=self.PLAYER_IFACE_NAME)
+                                            
+    def _get_proxy(self, obj_name, iface_name):
+        flags = Gio.DBusProxyFlags.DO_NOT_AUTO_START | Gio.DBusProxyFlags.DO_NOT_LOAD_PROPERTIES
+        return Gio.DBusProxy.new_for_bus_sync(Gio.BusType.SESSION, flags,
+                                              Gio.DBusInterfaceInfo(),
+                                              self.BUS_NAME, obj_name,
+                                              iface_name, None)
+    def _call_player_proxy(self, method, data):
+      time.sleep(0.1)
+      return self.player_proxy.call_sync(self.PLAYER_IFACE_NAME+'.'+method, data,
+                                           Gio.DBusCallFlags.NONE, -1, None)
+
     def is_running(self):
         """Is the player running?"""
-        status = self.player.GetStatus()
+        status = self._call_player_proxy('GetStatus', None).unpack()[0]
         if status[3] == 1:
           return True
         return False
         
     def is_playing(self):
         """Is the player playing"""
-        """Introduce a time delay, DBus seems to lag with python"""
-        time.sleep(0.1)
-        if self.player.GetStatus()[0] == 0:
+        if (self._call_player_proxy('GetStatus', None).unpack()[0])[0] == 0:
           return True
-        else:
-          return False
+        return False
         
     def status(self):
         """Returns the current song"""
-        """Introduce a time delay, DBus seems to lag with python"""
-        time.sleep(0.1)
         msg = None
         if self.is_playing():
           msg = "[Playing]"
         else:
           msg = "[Paused]"
-        metadata = self.player.GetMetadata()
+        metadata = self._call_player_proxy('GetMetadata', None).unpack()[0]
         return msg + ' "%s" by "%s" from "%s"' % (metadata['title'],
                                                   metadata['artist'],
                                                   metadata['album'])
             
     def get_volume(self):
         """Get the current volume"""
-        return str(round(self.player.VolumeGet()))
+        return str(round(self._call_player_proxy('VolumeGet', None)))
         
     def volume_up(self):
-        """Increase volume by 10%"""
-        return self.player.VolumeUp(10)
+        """Decrease volume by 10%"""
+        return self._call_player_proxy('VolumeUp', 10)
         
     def volume_down(self):
         """Decrease volume by 10%"""
-        return self.player.VolumeDown(10)
+        return self._call_player_proxy('VolumeDown', 10)
         
     def volume_mute(self):
         """Mute volume"""
-        return self.player.Mute()
+        return self._call_player_proxy('Mute', None)
         
     def volume_max(self):
         """Set volume to maximum"""
-        return self.player.VolumeSet(100)
+        return self._call_player_proxy('VolumeSet', 100)
         
     def next(self):
         """Next song in playlist"""
-        return self.player.Next()
+        return self._call_player_proxy('Next', None)
         
     def previous(self):
         """Previous song in playlist"""
-        return self.player.Prev()
+        return self._call_player_proxy('Prev', None)
         
     def play_pause(self):
         """Toggle play/pause on current song"""
-        return self.player.PlayPause()
+        return self._call_player_proxy('PlayPause', None)
         
     def play(self):
         """Play current song"""
