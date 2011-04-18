@@ -21,8 +21,6 @@ PLAYERS = {'rhythmbox': 'players.rb',
 FLOOD_CONTROL_TIME = 1
 irc_config = ConfigParser.SafeConfigParser()
 irc_config.readfp(open("default.cfg", 'r'))
-# Override defaults with user configuration
-irc_config.read("user.cfg")
 SERVER = irc_config.get("irc", "server")
 PORT = irc_config.get("irc", "port")
 CHANNEL = irc_config.get("irc", "channel")
@@ -213,4 +211,11 @@ def main():
     irc.start()
 
 if __name__ == '__main__':
+    import sys
+    if len(sys.argv) > 1:
+        # Override defaults with user configuration
+        irc_config.read(sys.argv[1])
+    SERVER = irc_config.get("irc", "server")
+    PORT = irc_config.get("irc", "port")
+    CHANNEL = irc_config.get("irc", "channel")
     main()
