@@ -58,10 +58,7 @@ LYRICS = ["Look at my horse, my horse is amazing",
 class MusicBot(irclib.SimpleIRCClient):
     def __init__(self):
         irclib.SimpleIRCClient.__init__(self)
-        self._hacky_insults_state = range(len(INSULTS))
-        self.last_change = datetime.now()
-        self._find_running_player()
-        self._lyrics_pos = 0
+        self._init()
         # First command returns nothing, second command returns what to say
         self.handlers = {
             'play': (self.player.play, self.player.status),
@@ -75,6 +72,7 @@ class MusicBot(irclib.SimpleIRCClient):
             'say': (self._noop, self._lyric_say),
             'randsay': (self._noop, self._lyric_randsay),
             'insult': (self._insult, self._noop),
+            'reload': (self._reload, self._noop),
         }
 
     def _noop(self):
@@ -92,6 +90,20 @@ class MusicBot(irclib.SimpleIRCClient):
         else:
             self._hacky_insults_state.remove(i)
         return objects[i]
+    
+    def _init(self):
+        self._hacky_insults_state = range(len(INSULTS))
+        self.last_change = datetime.now()
+        self._find_running_player()
+        self._lyrics_pos = 0
+
+    def _reload(self):
+        self.say("Reloading the player module...")
+        del(self.player)
+        del(self.player_module)
+        del(self.player_name)
+        self._init()
+        self.say("... Done.")
 
     def _import(self, name):
 	# http://docs.python.org/library/functions.html#__import__
