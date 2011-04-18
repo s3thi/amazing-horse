@@ -157,7 +157,7 @@ class MusicBot(irclib.SimpleIRCClient):
         """
         if self._flood_control():
             print "Ignored command, flood control!"
-            print "Command: %s" % handler
+            print "Command: %s, %s" % handler
             return
         handler[0](*args)
         output = handler[1]()
@@ -196,7 +196,7 @@ class MusicBot(irclib.SimpleIRCClient):
         print "Public Notice: " + event.arguments()[0]
 
     def on_privnotice(self, conn, event):
-        print "Private Notice: " + event.arguments()[0]
+        print "Private Notice from %s: %s" % (event.source(), event.arguments()[0])
         # Major hack to allow bot to join channels on IRC networks that don't
         # allow channel joining till private notices have been sent to the user
         print "Joining channel:" + CHANNEL
