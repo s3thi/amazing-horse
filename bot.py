@@ -6,6 +6,7 @@
 # License: MIT (2011)
 #
 
+import ConfigParser
 import random
 from datetime import datetime
 
@@ -17,43 +18,16 @@ PLAYERS = {'rhythmbox': 'players.rb',
            'iTunes': 'players.iT',
            'exaile': 'players.ex',}
 FLOOD_CONTROL_TIME = 1
-SERVER = "irc.oftc.net"
-PORT = 6667
-CHANNEL = "#hackers-india"
+irc_config = ConfigParser.SafeConfigParser()
+irc_config.readfp(open("default.cfg", 'r'))
+# Override defaults with user configuration
+irc_config.read("user.cfg")
+SERVER = irc_config.get("irc", "server")
+PORT = irc_config.get("irc", "port")
+CHANNEL = irc_config.get("irc", "channel")
 CMDSTR = ['!', '@']
-INSULTS = ["a cunt", "a piece of piss", "gayer than NPH", "scared of wee-wees",
-           "a poop-monster", "in love with pratual kalia's cock",
-           "under observation for pedophilic behaviour", "thinking about you",
-           "looking at my horse my horse is amazing", "a nub", "a boob",
-           "a creature who puts baboons to shame",
-           "a nihilistic, masochistic, gay ayn-rand lover", "allergic to cats",
-           "under the impression that he fits in", "in desperate need of some skull-fucking",
-           "a terrible, terrible driver", "a fan of justin bieber",
-           "a secret member of the chipmunk-andolan movement",
-           "currently engaged in dirty acts such as eating Glucon-D",
-           "currently occupied, please try again later", "not a funny person at all",
-           "thirsty, give him some of your man-juice", "not a big fan of boobs at all",
-           "just asking for it", "not going to be happy with this",
-           "jealous of pratual kalia's success as a ladies man", "an impudent bastard",
-           "afraid of cockroaches", "actually a hermaphrodite",
-           "shocked at your blatant disregard for his feelings",
-           "crying over the loss of his left ball", "drooling all over his keyboard",
-           "saving his virginity for pratual kalia", "self-sufficient in masturbation",
-           "not looking for a life at the moment, thank you very much",
-           "A BEAUTIFUL BUTTERFLY~~", "a Haiku OS developer, lol"]
-# http://lookatmyhorsemyhorseisamazing.com/
-LYRICS = ["Look at my horse, my horse is amazing",
-          "Give it a lick, Mmm it tastes just like raisins",
-          "Stroke on it's mane it turns into a plane",
-          "And then it turns back again when you tug on it's winky",
-          "Eww that's dirty!",
-          "Do you think so? Well I better not show you where the lemonade is made",
-          "Sweet Lemonade, Mmm Sweet lemonade",
-          "Sweet lemonade, yeah sweet lemonade",
-          "(Synth Solo)",
-          "Get on my horse, I'll take you round the Universe and all the other places too",
-          "I think you'll find that the Universe pretty much covers everything",
-          "Shut up woman, get on my horse"]
+LYRICS = []
+INSULTS = []
 
 class MusicBot(irclib.SimpleIRCClient):
     def __init__(self):
@@ -71,8 +45,10 @@ class MusicBot(irclib.SimpleIRCClient):
             'status': (self._noop, self.player.status),
             'say': (self._noop, self._lyric_say),
             'randsay': (self._noop, self._lyric_randsay),
-            'insult': (self._insult, self._noop),
             'reload': (self._reload, self._noop),
+        }
+        self.input_handlers = {
+            'insult': (self._insult, self._noop),
         }
 
     def _noop(self):
@@ -92,10 +68,17 @@ class MusicBot(irclib.SimpleIRCClient):
         return objects[i]
     
     def _init(self):
+        global INSULTS
+        global LYRICS
         self._hacky_insults_state = range(len(INSULTS))
         self.last_change = datetime.now()
+        # May crash due to bugs in pygobject, etc
         self._find_running_player()
         self._lyrics_pos = 0
+        # Chomp newlines because they break ACTIONs
+        INSULTS = [i.strip() for i in open('insults.txt', 'r').readlines()]
+        # http://lookatmyhorsemyhorseisamazing.com/
+        LYRICS = [i.strip() for i in open('lyrics.txt', 'r').readlines()]
 
     def _reload(self):
         self.say("Reloading the player module...")
@@ -145,8 +128,16 @@ class MusicBot(irclib.SimpleIRCClient):
     def say(self, msg):
         self.connection.privmsg(CHANNEL, msg)
 
-    def _insult(self):
-        self.say("GeneralMaximus is %s" % self._biased_choice(INSULTS))
+    def _insult(self, *args):
+        target = "everyone"
+        if args and len(args[0].split()) > 1:
+            # Extract the command string and assign the target
+            target = args[0].split()[1]
+        insult = self._biased_choice(INSULTS)
+        if target == "self":
+            self.connection.action(CHANNEL, "is " + insult)
+        else:
+            self.say("%s is %s" % (target, insult))
 
     def _lyric_say(self):
         ret = LYRICS[self._lyrics_pos]
@@ -158,39 +149,66 @@ class MusicBot(irclib.SimpleIRCClient):
     def _lyric_randsay(self):
         return self._biased_choice(LYRICS)
 
-    def _call_cmd(self, cmd):
-        """Run the requested command using the appropriate handler"""
-        self.handlers[cmd][0]()
-        output = self.handlers[cmd][1]()
+    def _call_cmd(self, handler, *args):
+        """
+        Run the command handler provided.
+        Optional args are passed on to handler[0].
+        """
+        if self._flood_control():
+            print "Ignored command, flood control!"
+            print "Command: %s" % handler
+            return
+        handler[0](*args)
+        output = handler[1]()
         if output:
             self.say(output)
 
+    def _strip_cmdstr(self, text):
+        for cmdstr in CMDSTR:
+            if text.startswith(cmdstr):
+                return text.lstrip(cmdstr)
+        return text
+
     def on_pubmsg(self, conn, event):
         self.event = event
-        text = self.event.arguments()[0]
-        for each in CMDSTR:
-            if text.startswith(each):
-                text = text.lstrip(each)
-                break
-        else:
+        text = self.event.arguments()[0].strip()
+        cmd = self._strip_cmdstr(text)
+        if text == cmd:
+            # Not a command at all
             return
-        if text not in self.handlers:
-            return
-        if self._flood_control():
-            print "Ignored command, flood control!"
-            print "Command: %s" % text
-            return
-        self._call_cmd(text)
+        if cmd in self.handlers:
+            # Command that doesn't need to know the command string
+            return self._call_cmd(self.handlers[cmd])
+        for each in self.input_handlers:
+            cmd = cmd.split()[0]
+            if each.startswith(cmd):
+                # Command that needs to know the command string
+                return self._call_cmd(self.input_handlers[each], text)
+
+    def on_error(self, conn, event):
+        print "!!! Error:" + event.arguments()[0]
+
+    def on_join(self, conn, event):
+        print "Joined channel."
+
+    def on_pubnotice(self, conn, event):
+        print "Public Notice: " + event.arguments()[0]
+
+    def on_privnotice(self, conn, event):
+        print "Private Notice: " + event.arguments()[0]
+        # Major hack to allow bot to join channels on IRC networks that don't
+        # allow channel joining till private notices have been sent to the user
+        print "Joining channel:" + CHANNEL
+        self.connection.join(CHANNEL)
 
 def main():
     irc = MusicBot()
     # FIXME: HACK HACK HACK.
     # Add ident + nick fallback
     nick = 'AmazingHorse'+str(random.randint(0, 100))
-    print "Connecting to server %s:%s as %s" % (SERVER, PORT, nick)
-    irc.connect(SERVER, PORT, nick)
-    print "Joining channel %s" % CHANNEL
-    irc.connection.join(CHANNEL)
+    params = (SERVER, int(PORT), nick)
+    print "Connecting to server %s:%s as %s" % params
+    irc.connect(*params)
     irc.start()
 
 if __name__ == '__main__':

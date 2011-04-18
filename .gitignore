@@ -4,3 +4,4 @@
 a.out
 *.py[oc]
 .DS_Store
+user.cfg
