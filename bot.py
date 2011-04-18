@@ -174,7 +174,7 @@ class MusicBot(irclib.SimpleIRCClient):
         self.event = event
         text = self.event.arguments()[0].strip()
         cmd = self._strip_cmdstr(text)
-        if text == cmd:
+        if not cmd or text == cmd:
             # Not a command at all
             return
         if cmd in self.handlers:
