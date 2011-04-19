@@ -80,7 +80,7 @@ class MusicBot(irclib.SimpleIRCClient):
         LYRICS = [i.strip() for i in open('lyrics.txt', 'r').readlines()]
 
     def _reload(self):
-        self.say("Reloading the player module...")
+        self.say("Reloading myself...")
         del(self.player)
         del(self.player_module)
         del(self.player_name)
