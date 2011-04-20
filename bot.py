@@ -182,6 +182,14 @@ class MusicBot(irclib.SimpleIRCClient):
     def on_error(self, conn, event):
         print "!!! Error:" + event.arguments()[0]
 
+    def _join(self):
+        print "Joining channel:" + CHANNEL
+        self.connection.join(CHANNEL)
+
+    def on_kick(self, conn, event):
+        print "Was kicked, rejoining..."
+        self._join()
+
     def on_join(self, conn, event):
         print "Joined channel."
 
@@ -192,8 +200,7 @@ class MusicBot(irclib.SimpleIRCClient):
         print "Private Notice from %s: %s" % (event.source(), event.arguments()[0])
         # Major hack to allow bot to join channels on IRC networks that don't
         # allow channel joining till private notices have been sent to the user
-        print "Joining channel:" + CHANNEL
-        self.connection.join(CHANNEL)
+        self._join()
 
 def main():
     irc = MusicBot()
