@@ -12,6 +12,7 @@ import players.base
 
 class Player(players.base.Player):
     def __init__(self):
+        self.name = "Rhythmbox"
         self.BUS_NAME = "org.gnome.Rhythmbox"
         self.PLAYER_OBJ_NAME = "/org/gnome/Rhythmbox/Player"
         self.PLAYER_IFACE_NAME = "org.gnome.Rhythmbox.Player"
@@ -24,10 +25,10 @@ class Player(players.base.Player):
 
     def _get_proxy(self, obj_name, iface_name):
         flags = Gio.DBusProxyFlags.DO_NOT_AUTO_START | Gio.DBusProxyFlags.DO_NOT_LOAD_PROPERTIES
-        return Gio.DBusProxy.new_for_bus_sync(Gio.BusType.SESSION, flags,
-                                              Gio.DBusInterfaceInfo(),
-                                              self.BUS_NAME, obj_name,
-                                              iface_name, None)
+        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        return Gio.DBusProxy.new_sync(bus, flags, None,
+                                      self.BUS_NAME, obj_name,
+                                      iface_name, None)
 
     def _call_player_proxy(self, method, data):
         return self.player_proxy.call_sync(self.PLAYER_IFACE_NAME+'.'+method, data,

@@ -12,7 +12,7 @@ import players.base
 
 class Player(players.base.Player):
     def __init__(self):
-        pass
+        self.name = "iTunes"
 
     def _osa_script(self, script):
         subprocess.check_call(r'osascript -e "{0}"'.format(script), shell=True)

@@ -14,10 +14,7 @@ from external import irclib
 
 from players.base import Player
 
-PLAYERS = {'rhythmbox': 'players.rb',
-           'iTunes': 'players.iT',
-           'exaile': 'players.ex',
-           'amarok': 'players.amarok'}
+PLAYERS = ['players.'+i for i in ['rb', 'iT', 'ex', 'amarok']]
 FLOOD_CONTROL_TIME = 1
 irc_config = ConfigParser.SafeConfigParser()
 irc_config.readfp(open("default.cfg", 'r'))
@@ -83,7 +80,6 @@ class MusicBot(irclib.SimpleIRCClient):
         self.say("Reloading myself...")
         del(self.player)
         del(self.player_module)
-        del(self.player_name)
         self._init()
         self.say("... Done.")
 
@@ -100,17 +96,16 @@ class MusicBot(irclib.SimpleIRCClient):
 
 	uses the is_running() function for each module
 	"""
-	for (player_name, player_module) in PLAYERS.items():
-	    self.player_name = player_name
+	for player_module in PLAYERS:
             try:
 	        self.player_module = self._import(player_module)
             except ImportError:
-                print "Ignoring " + player_name
+                print "Could not import %s, ignoring..." % player_module
                 continue
 	    self.player = self.player_module.Player()
 	    if self.player.is_running():
 		return
-            print self.player_name + " not running"
+            print self.player.name + " not running"
         else:
             raise Exception("OMG NO RUNNING PLAYERS FOUND.")
 

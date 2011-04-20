@@ -12,7 +12,7 @@ import players.base
 
 class Player(players.base.Player):
     def __init__(self):
-        pass
+        self.name = "Exaile"
 
     def _exa_script(self, script):
         subprocess.check_call(r'exaile --{0}'.format(script), shell=True)
